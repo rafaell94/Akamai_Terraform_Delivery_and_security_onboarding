@@ -1,0 +1,278 @@
+## ----------------------------------------------------------------------------
+## Scope
+## ----------------------------------------------------------------------------
+
+variable "contract_id" {
+  description = "Contract ID for property/config creation"
+  type        = string
+}
+
+variable "group_id" {
+  description = "Group ID for property/config creation."
+  type        = string
+}
+
+## ----------------------------------------------------------------------------
+## Property
+## ----------------------------------------------------------------------------
+
+variable "product_id" {
+  description = "Property Manager product. [ION - Fresca]"
+  type        = string
+  default     = "Site_Accel"
+}
+
+variable "name" {
+  description = "Property name."
+  type        = string
+}
+
+variable "version_notes" {
+  description = "Property version notes."
+  type        = string
+  default     = "Initial Config"
+}
+
+variable "hostnames" {
+  description = "Map of hostnames to their settings. Keys are the hostnames; cert_id (optional) is the certificate enrollment id used for the hostname's edge hostname, falling back to certificate_id when null."
+  type = map(object({
+    origin  = optional(string)
+    cert_id = optional(number)
+  }))
+
+  validation {
+    condition = alltrue([
+      for h in keys(var.hostnames) : h == lower(h)
+    ])
+    error_message = "All hostnames must be lowercase."
+  }
+}
+
+variable "default_origin" {
+  description = "Default origin server for all properties"
+  type        = string
+}
+
+variable "forward_host_header" {
+  description = "Host header to be forwarded to the origin server. Possible fixed values are ORIGIN_HOSTNAME or REQUEST_HOST_HEADER. But the user can also select any host header they would like to use as a custom value."
+  type        = string
+  default     = "REQUEST_HOST_HEADER"
+}
+
+variable "additional_origins" {
+  description = "Additional origins for the property. For now the match is only by hostname. The field forward_host_header allows specifying a custom host header for each additional origin.Possible fixed values are ORIGIN_HOSTNAME or REQUEST_HOST_HEADER. But the user can also select any host header they would like to use as a custom value."
+  type = map(object({
+    origin_name         = string
+    forward_host_header = string
+    hostname_match      = list(string)
+    path_match          = list(string)
+  }))
+  default = {}
+}
+
+variable "sure_route_test_object" {
+  description = "Test object path for SureRoute"
+  type        = string
+  default     = "/akamai/sureroute-test-object.html"
+}
+
+
+## ----------------------------------------------------------------------------
+## Activation
+## ----------------------------------------------------------------------------
+
+variable "notification_emails" {
+  description = "List or emails for notifications"
+  type        = list(string)
+  validation {
+    condition     = length(var.notification_emails) > 0
+    error_message = "At least one email should be provided"
+  }
+}
+
+variable "activate_to_staging" {
+  description = "Set to true to directly activate on the staging network."
+  type        = bool
+  default     = false
+}
+
+variable "activate_to_production" {
+  description = "Set to true to directly activate on the production network."
+  type        = bool
+  default     = false
+}
+
+variable "noncompliance_reason" {
+  type        = list(string)
+  description = "Allowed values for noncompliance_reason are \"NO_PRODUCTION_TRAFFIC\", \"EMERGENCY\", \"NONE\". (OR null for the customer, as None will require the complaince block)"
+  default     = []
+  validation {
+    condition = (
+      (
+        !var.activate_to_production ||
+        (
+          (
+            length(var.noncompliance_reason) == 1 &&
+            var.activate_to_production
+          ) &&
+          (
+            contains(var.noncompliance_reason, "EMERGENCY") ||
+            contains(var.noncompliance_reason, "OTHER") ||
+            contains(var.noncompliance_reason, "NO_PRODUCTION_TRAFFIC") ||
+            contains(var.noncompliance_reason, "NONE")
+          )
+        )
+      )
+    )
+    error_message = "Allowed values for noncompliance_reason are \"NO_PRODUCTION_TRAFFIC\", \"EMERGENCY\", \"NONE\", \"OTHER\"."
+  }
+}
+
+variable "ticket_id" {
+  type        = string
+  description = "Identifies the ticket that describes the need for the activation"
+  default     = null
+  validation {
+    condition = (
+      !var.activate_to_production ||
+      (
+        var.ticket_id != null &&
+        var.activate_to_production
+      )
+    )
+    error_message = " a ticket id should be logged for complaince reasons"
+  }
+}
+
+variable "other_noncompliance_reason" {
+  type        = string
+  description = "Describes the reason why the activation must occur immediately, out of compliance with the standard procedure"
+  default     = null
+  validation {
+    condition = (
+      !var.activate_to_production ||
+      !contains(var.noncompliance_reason, "OTHER") ||
+      (
+        var.other_noncompliance_reason != null &&
+        var.activate_to_production &&
+        contains(var.noncompliance_reason, "OTHER")
+      )
+    )
+    error_message = "The other reason explanantion needs to be logged"
+  }
+}
+
+variable "peer_reviewed_by" {
+  type        = string
+  description = "Email address of the peer who performed the review"
+  default     = null
+  validation {
+    condition = (
+      !var.activate_to_production ||
+      !contains(var.noncompliance_reason, "NONE") ||
+      (
+        var.peer_reviewed_by != null &&
+        var.activate_to_production &&
+        contains(var.noncompliance_reason, "NONE")
+      )
+    )
+    error_message = "When NONE is choosen as the non compliance reason the peer_reviewed_by field is required"
+  }
+}
+
+variable "customer_email" {
+  type        = string
+  description = "Email address of the customer that acknowledged, tested and accepted the change"
+  default     = null
+  validation {
+    condition = (
+      !var.activate_to_production ||
+      !contains(var.noncompliance_reason, "NONE") ||
+      (
+        var.customer_email != null &&
+        var.activate_to_production &&
+        contains(var.noncompliance_reason, "NONE")
+      )
+    )
+    error_message = "When NONE is choosen as the non compliance reason the customer_email field is required"
+  }
+}
+
+variable "unit_tested" {
+  type        = bool
+  description = "Whether the metadata to activate has been fully tested"
+  default     = null
+  validation {
+    condition = (
+      !var.activate_to_production ||
+      !contains(var.noncompliance_reason, "NONE") ||
+      (
+        var.unit_tested != null &&
+        var.activate_to_production &&
+        contains(var.noncompliance_reason, "NONE")
+      )
+    )
+    error_message = "When NONE is choosen as the non compliance reason the unit_tested field is required"
+  }
+}
+
+variable "activation_notes" {
+  description = "Activation notes. Leave default value until DXE-2373 is resolved, unless you know what you are doing."
+  type        = string
+  default     = "activated with terraform"
+}
+
+
+variable "activation_to_staging_exists" {
+  description = "Do not modify. Flag used together with the logic in the activation resources for the initial activation to staging."
+  type        = bool
+  default     = false
+}
+variable "activation_to_production_exists" {
+  description = "Do not modify. Flag used together with the logic in the activation resources for the initial activation to production."
+  type        = bool
+  default     = false
+}
+
+
+
+## ----------------------------------------------------------------------------
+## CP Code
+## ----------------------------------------------------------------------------
+
+variable "cpcode_name" {
+  description = "Default CP Code name. Will be the property name (var.name) if null."
+  type        = string
+  default     = null
+}
+
+## ----------------------------------------------------------------------------
+## Certificate
+## ----------------------------------------------------------------------------
+variable "certificate_id" {
+  description = <<-EOD
+    Certificate enrollment id. Only applicable if enhanced_tls is true, and secure_by_default
+    is false.
+
+    Can be retrieved using AkamaiPowershell or the Akamai CPS CLI.
+  EOD
+  type        = number
+  default     = null
+}
+
+## ----------------------------------------------------------------------------
+## EdgeHostname
+## ----------------------------------------------------------------------------
+
+variable "ip_behavior" {
+  description = <<-EOD
+    EdgeHostname IP behaviour.
+  EOD
+  type        = string
+  default     = "IPV6_COMPLIANCE"
+
+  validation {
+    condition     = length(regexall("^(IPV4|IPV6_COMPLIANCE)$", var.ip_behavior)) > 0
+    error_message = "ERROR: Valid types are IPV4 or IPV6_COMPLIANCE."
+  }
+}
