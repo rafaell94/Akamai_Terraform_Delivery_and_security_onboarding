@@ -66,6 +66,7 @@ resource "akamai_appsec_advanced_settings_logging" "logging" {
 resource "akamai_appsec_siem_settings" "my_siem_settings" {
   config_id               = akamai_appsec_configuration.config.config_id
   enable_siem             = true
+  enable_botman_siem       = true
   enable_for_all_policies = true
   include_ja4_fingerprint_to_siem = true
   siem_id                 = 1

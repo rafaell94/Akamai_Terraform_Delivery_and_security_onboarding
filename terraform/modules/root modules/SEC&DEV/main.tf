@@ -336,3 +336,15 @@ module "security-policy" {
 
   depends_on = [module.security-config]
 }
+
+
+module "security_activation_staging" {
+  count = var.activate_to_staging ? 1 : 0
+  source = "../../child modules/aap-asm/activate-security"
+
+  config_name = var.config_name
+  config_id = module.security-config.config_id
+  activation_notes = var.activation_notes
+  notification_emails = var.notification_emails
+  activate_to_staging = var.activate_to_staging
+}
