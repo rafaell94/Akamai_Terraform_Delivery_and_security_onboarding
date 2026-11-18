@@ -3,7 +3,7 @@ terraform {
   required_providers {
     akamai = {
       source  = "akamai/akamai"
-      version = "~> 10.1"
+      version = "~> 12.0"
     }
     time = {
       source  = "hashicorp/time"

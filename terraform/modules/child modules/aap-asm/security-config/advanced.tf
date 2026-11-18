@@ -3,6 +3,30 @@ resource "akamai_appsec_advanced_settings_evasive_path_match" "evasive_path_matc
   enable_path_match = false
 }
 
+resource "akamai_appsec_advanced_settings_url_evasion_defense" "url_evasion_defense" {
+  depends_on = [akamai_appsec_advanced_settings_evasive_path_match.evasive_path_match]
+  config_id  = akamai_appsec_configuration.config.config_id
+  status     = "enabled"
+  rules = [
+    {
+      rule_id = 3002500
+      action  = "alert"
+    },
+    {
+      rule_id = 3002501
+      action  = "alert"
+    },
+    {
+      rule_id = 3002502
+      action  = "alert"
+    },
+    {
+      rule_id = 3002503
+      action  = "alert"
+    },
+  ]
+}
+
 resource "akamai_appsec_advanced_settings_prefetch" "prefetch" {
   config_id            = akamai_appsec_configuration.config.config_id
   enable_app_layer     = true
@@ -37,6 +61,14 @@ resource "akamai_appsec_advanced_settings_logging" "logging" {
       }
     }
   )
+}
+
+resource "akamai_appsec_siem_settings" "my_siem_settings" {
+  config_id               = akamai_appsec_configuration.config.config_id
+  enable_siem             = true
+  enable_for_all_policies = true
+  include_ja4_fingerprint_to_siem = true
+  siem_id                 = 1
 }
 
 resource "akamai_appsec_advanced_settings_attack_payload_logging" "attack_payload_logging" {
@@ -77,3 +109,4 @@ resource "akamai_appsec_advanced_settings_pragma_header" "pragma_header" {
     }
   )
 }
+
