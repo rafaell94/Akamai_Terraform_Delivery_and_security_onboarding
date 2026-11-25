@@ -25,8 +25,7 @@ resource "akamai_cp_code" "this" {
   group_id    = var.group_id
   product_id  = "prd_${var.product_id}"
 }
-
-resource "akamai_edge_hostname" "edge_hostname" {
+resource "akamai_edge_hostname" "ehn" {
   for_each      = var.hostnames
   product_id    = "prd_${var.product_id}"
   contract_id   = var.contract_id
@@ -55,7 +54,7 @@ resource "akamai_property" "this" {
   rule_format = module.rules.rule_format
   rules       = module.rules.rules
 
-  depends_on = [akamai_edge_hostname.edge_hostname, akamai_cp_code.this]
+  depends_on = [akamai_edge_hostname.ehn, akamai_cp_code.this]
 
   lifecycle {
     ignore_changes = [version_notes]
